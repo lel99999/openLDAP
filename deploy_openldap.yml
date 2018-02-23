@@ -1,0 +1,17 @@
+---
+- hosts: all
+    name: deploy packages
+    vars:
+
+    tasks:
+      = name: install basic packages
+        become: yes
+        become_method: sudo
+        yum: pkg={{item}} state=installed
+        with_items:
+          - openldap
+          - compat-openldap
+          - openldap-clients
+          - openldap-servers
+          - openldap-servers-sql
+          - openldap-devel  
