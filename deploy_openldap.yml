@@ -151,8 +151,8 @@
         blockinfile:
           path: /tmp/base.ldif
           block: |
-            "dn: dc=itzgeek,dc=local
-             dc: itzgeek
+            "dn: dc=hdp,dc=local
+             dc: hdp 
              objectClass: top
              objectClass: domain
 
