@@ -84,4 +84,92 @@
         resgister: command_output
       - debug: msg="{{command_output.stdout}}"
 
-   
+#      - name: create certificate       
+      - name: change owner and group permissions
+        become: yes
+        become_method: sudo
+        command: chown -R ldap:ldap /etc/openldap/certs/*.pem
+
+      - name: create certs ldif
+        become: yes
+        become_method: sudo
+        blockinfile:
+          path: /tmp/certs.ldif
+          block: |
+            "dn: cn=config
+             changetype: modify
+             replace: olcTLSCertificateFile
+             olcTLSCertificateFile: /etc/openldap/certs/hdpldapcert.pem
+
+             dn: cn=config
+             changetype: modify
+             replace: olcTLSCertificateKeyFile
+             olcTLSCertificateKeyFile: /etc/openldap/certs/hdpldapkey.pem"
+
+      - name: push ldif values
+        become: yes
+        become_method: sudo
+        command: ldapmodify -Y external -H ldapi:/// -f /tmp/certs.ldif
+        resgister: command_output
+      - debug: msg="{{command_output.stdout}}"
+ 
+      - name: test and verify configurations
+        become: yes
+        become_method: sudo
+        command: slaptest -u
+        resgister: command_output
+      - debug: msg="{{command_output.stdout}}"
+        
+      - name: copy template
+        become: yes
+        become_method: sudo
+        command: cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+
+      - name: change ownership
+        become: yes
+        become_method: sudo
+        command: chown ldap:ldap /var/lib/ldap/*
+
+      - name: add schema1
+        become: yes
+        become_method: sudo
+        command: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif
+      
+      - name: add schema2
+        become: yes
+        become_method: sudo
+        command: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif
+
+      - name: add schema3
+        become: yes
+        become_method: sudo
+        command: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif
+
+      - name: generate base.ldif for domain
+        become: yes
+        become_method: sudo
+        blockinfile:
+          path: /tmp/base.ldif
+          block: |
+            "dn: dc=itzgeek,dc=local
+             dc: itzgeek
+             objectClass: top
+             objectClass: domain
+
+             dn: cn=ldapadm ,dc=hdp,dc=local
+             objectClass: organizationalRole
+             cn: ldapadm
+             description: LDAP Manager
+
+             dn: ou=People,dc=hdp,dc=local
+             objectClass: organizationalUnit
+             ou: People
+
+             dn: ou=Group,dc=hdp,dc=local
+             objectClass: organizationalUnit
+             ou: Group"
+
+      - name: build directory structure
+        become: yes
+        become_method: sudo
+        command: ldapadd -x -W -D "cn=ldapadm,dc=hdp,dc=local" -f base.ldif
