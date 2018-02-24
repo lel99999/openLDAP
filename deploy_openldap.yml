@@ -4,7 +4,7 @@
     vars:
 
     tasks:
-      = name: install basic packages
+      - name: install basic packages
         become: yes
         become_method: sudo
         yum: pkg={{item}} state=installed
@@ -15,3 +15,28 @@
           - openldap-servers
           - openldap-servers-sql
           - openldap-devel  
+
+      - name: start service
+        become: yes
+        become_method: sudo
+        command: systemctl start slapd.service
+
+      - name: enable service
+        become: yes
+        become_method: suod
+        command: systemclt enable slapd.service 
+       
+      - name: install net-tools
+        become: yes
+        become_method: sudo
+        yum: pkg=net-tools state=installed
+
+      - name: ensure slapd and port 389 is up
+        become: yes
+        become_method: sudo
+        command: netstat -antup | grep -i 389
+        register: command_output
+      - debug: msg="{{command_output.stdout}}"
+
+      - 
+
